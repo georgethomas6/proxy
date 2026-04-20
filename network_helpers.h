@@ -10,3 +10,4 @@
 
 #define NUM_BACKLOG 1024
 int gts_open_listenfd(char *);
+int gts_open_clientfd(char *, char *);
