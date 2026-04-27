@@ -1,6 +1,7 @@
 
 
 #include <netdb.h>
+#include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,5 +10,6 @@
 #include <unistd.h>
 
 #define NUM_BACKLOG 1024
+#define MAXLINE 1024
 int gts_open_listenfd(char *);
 int gts_open_clientfd(char *, char *);

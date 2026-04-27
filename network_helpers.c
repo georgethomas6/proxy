@@ -25,7 +25,13 @@ int gts_open_listenfd(char *port) {
                      // machine (IPv4 and/or IPv6)
 
   if ((rc = getaddrinfo(NULL, port, &hints, &addies)) != 0) {
-    return rc; // getaddrinfo failed
+
+    char *err = NULL;
+    asprintf(&err, "failed to establish server connection (%s)",
+             gai_strerror(rc));
+    perror(err);
+    free(err);
+    return -1; // getaddrinfo failed
   }
 
   for (addy = addies; addy; addy = addy->ai_next) {
