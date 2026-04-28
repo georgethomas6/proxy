@@ -6,6 +6,14 @@
 #include <string.h>
 #include <time.h>
 
+/*
+ * TODO:
+ *
+ * ADD TESTS
+ * CREATE LINKED LIST TO PACKETIZE READING
+ * THREAD THIS HO
+ * */
+
 int handle_client_request(int, struct transaction *);
 int send_client_request(int, struct transaction *);
 int handle_server_response(int, int, struct transaction *);
