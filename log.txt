@@ -1,0 +1,10 @@
+Time: Tue 28 Apr 2026 15:17:23 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://warren.sewanee.edu/scarl/CS428/ProxyLab/proxylab.pdf
+Size of Server's Response: 603
+
+Time: Tue 28 Apr 2026 15:17:31 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://warren.sewanee.edu/scarl/CS428/ProxyLab/proxylab.pdf
+Size of Server's Response: 603
+

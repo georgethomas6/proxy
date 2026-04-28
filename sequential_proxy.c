@@ -12,6 +12,7 @@ int handle_server_response(int, int, struct transaction *);
 int connect_to_server(struct transaction *, char *, int *);
 void handle_transaction(int, struct sockaddr);
 void format_log_entry(char **, struct sockaddr_in *, char *, int);
+void write_log_entry(char *, size_t);
 int format_request(char *, char *, char **);
 void handle_SIGPIPE(int);
 
@@ -190,12 +191,19 @@ void handle_transaction(int conn_fd, struct sockaddr client_addy) {
   char *logstring = NULL;
   format_log_entry(&logstring, (struct sockaddr_in *)&client_addy, t.uri, size);
   printf("LOG:\n %s", logstring);
+  write_log_entry(logstring, strlen(logstring));
 
   free(logstring);
   free(p);
   free(t.to_server);
   close(server_fd);
   close(conn_fd);
+}
+
+void write_log_entry(char *logstring, size_t len) {
+  int fd = open("log.txt", O_APPEND | O_WRONLY);
+  int num = write(fd, logstring, len);
+  close(fd);
 }
 
 /*
@@ -209,8 +217,6 @@ void format_log_entry(char **logstring, struct sockaddr_in *sockaddr, char *uri,
                       int size) {
   time_t now;
   char time_str[MAXLINE];
-  unsigned long host;
-  unsigned char a, b, c, d;
 
   /* Get a formatted time string */
   now = time(NULL);
@@ -221,6 +227,6 @@ void format_log_entry(char **logstring, struct sockaddr_in *sockaddr, char *uri,
 
   asprintf(logstring,
            "Time: %s\nIP ADDRESS: %s\nURI REQUESTED: %s\nSize of Server's "
-           "Response: %d\n",
+           "Response: %d\n\n",
            time_str, ip_in_dotted, uri, size);
 }
