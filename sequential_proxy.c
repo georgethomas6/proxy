@@ -1,13 +1,17 @@
 #include "helpers/http_parsing.h"
 #include "helpers/network.h"
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 int handle_client_request(int, struct transaction *);
 int send_client_request(int, struct transaction *);
-void handle_server_reponse(int, int, struct transaction *);
+int handle_server_response(int, int, struct transaction *);
 int connect_to_server(struct transaction *, char *, int *);
-void handle_transaction(int conn_fd);
+void handle_transaction(int, struct sockaddr);
+void format_log_entry(char **, struct sockaddr_in *, char *, int);
 int format_request(char *, char *, char **);
 void handle_SIGPIPE(int);
 
@@ -29,7 +33,7 @@ int main(int argc, char *argv[]) {
   while (1) {
     unsigned int client_len = sizeof(client_addr);
     conn_fd = accept(listen_fd, &client_addr, &client_len);
-    handle_transaction(conn_fd);
+    handle_transaction(conn_fd, client_addr);
   }
 
   close(listen_fd);
@@ -66,15 +70,18 @@ int send_client_request(int server_fd, struct transaction *t) {
  * prints a message to stderr and returns -1
  * Returns 0 on success
  * */
-void handle_server_reponse(int server_fd, int conn_fd, struct transaction *t) {
+int handle_server_response(int server_fd, int conn_fd, struct transaction *t) {
 
   int num_bytes;
   num_bytes = socket_read_response(server_fd, t->response);
 
   if (num_bytes >= 0)
     num_bytes = write(conn_fd, t->response, num_bytes);
-  else
+  else {
     perror("Failed to read server response\n");
+    return -1;
+  }
+  return num_bytes;
 }
 
 /*
@@ -145,7 +152,7 @@ void handle_SIGPIPE(int signum) {
   exit(1);
 }
 
-void handle_transaction(int conn_fd) {
+void handle_transaction(int conn_fd, struct sockaddr client_addy) {
 
   if (conn_fd == -1) {
     perror("Failed to accept connection");
@@ -153,6 +160,7 @@ void handle_transaction(int conn_fd) {
   }
 
   struct transaction t;
+  memset(&t, 0, sizeof(struct transaction));
 
   if (handle_client_request(conn_fd, &t) < 0) {
     close(conn_fd);
@@ -177,10 +185,42 @@ void handle_transaction(int conn_fd) {
     return;
   }
 
-  handle_server_reponse(server_fd, conn_fd, &t);
+  int size = handle_server_response(server_fd, conn_fd, &t);
 
+  char *logstring = NULL;
+  format_log_entry(&logstring, (struct sockaddr_in *)&client_addy, t.uri, size);
+  printf("LOG:\n %s", logstring);
+
+  free(logstring);
   free(p);
   free(t.to_server);
   close(server_fd);
   close(conn_fd);
+}
+
+/*
+ * format_log_entry - Create a formatted log entry in logstring.
+ *
+ * The inputs are the socket address of the requesting client
+ * (sockaddr), the URI from the request (uri), and the size in bytes
+ * of the response from the server (size).
+ */
+void format_log_entry(char **logstring, struct sockaddr_in *sockaddr, char *uri,
+                      int size) {
+  time_t now;
+  char time_str[MAXLINE];
+  unsigned long host;
+  unsigned char a, b, c, d;
+
+  /* Get a formatted time string */
+  now = time(NULL);
+  strftime(time_str, MAXLINE, "%a %d %b %Y %H:%M:%S %Z", localtime(&now));
+
+  char ip_in_dotted[MAXLINE];
+  inet_ntop(AF_INET, &sockaddr->sin_addr, ip_in_dotted, sockaddr->sin_len);
+
+  asprintf(logstring,
+           "Time: %s\nIP ADDRESS: %s\nURI REQUESTED: %s\nSize of Server's "
+           "Response: %d\n",
+           time_str, ip_in_dotted, uri, size);
 }
