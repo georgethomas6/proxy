@@ -2,6 +2,7 @@
 *
 # Do not ignore files with an extension (source code)
 !*.*
+!/helpers
 # Do not ignore Makefile
 !Makefile
 # Do not ignore README
