@@ -1,10 +1,5 @@
-
-#include "helpers/csapp.h"
 #include "helpers/http_parsing.h"
 #include "helpers/network.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 /*
  * MODULARIZE:
@@ -15,8 +10,9 @@
  *  4. serve response method (to client from proxy from server)
  */
 
+int handle_client(int, struct transaction *);
 int format_request(char *, char *, char **);
-void print_request(char *, size_t);
+void handle_SIGPIPE(int);
 
 int main(int argc, char *argv[]) {
 
@@ -31,6 +27,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
   struct sockaddr client_addr;
+  signal(SIGPIPE, handle_SIGPIPE);
 
   while (1) {
     unsigned int client_len = sizeof(client_addr);
@@ -40,15 +37,21 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    char request[MAXLINE], reponse[MAXLINE], uri[MAXLINE], hostname[MAXLINE],
+    char request[MAXLINE], response[MAXLINE], uri[MAXLINE], hostname[MAXLINE],
         pathname[MAXLINE];
     char *to_server = NULL;
     int port = 80;
-    rio_t rio;
 
-    // read request
-    rio_readinitb(&rio, conn_fd);
-    size_t num_bytes = rio_readlineb(&rio, request, MAXLINE);
+    printf("READING\n");
+    int num_bytes = socket_read_request(conn_fd, request);
+    if (num_bytes <= 0) {
+      fprintf(stderr, "Failed to read request...aborting connection\n");
+      continue;
+    }
+
+    printf("GOT %d bytes \n", num_bytes);
+
+    print_request(request, num_bytes);
 
     // validate request and put uri in uri variable
     if (validate_request(request, uri, num_bytes) == 0) {
@@ -75,7 +78,6 @@ int main(int argc, char *argv[]) {
     char *p;
     asprintf(&p, "%d", port);
 
-    // fix reading!
     int server_fd;
     if ((server_fd = gts_open_clientfd(hostname, p)) < 0) {
       if (server_fd == -1) {
@@ -91,16 +93,21 @@ int main(int argc, char *argv[]) {
       continue;
     };
 
-    rio_writen(server_fd, to_server, request_len);
+    num_bytes = socket_write(server_fd, to_server, request_len);
+    printf("WROTE %d BYTES TO SERVER", num_bytes);
 
-    rio_t rio2;
-    rio_readinitb(&rio2, server_fd);
-    while ((num_bytes = rio_readlineb(&rio2, reponse, MAXLINE)) > 0) {
-      rio_writen(conn_fd, reponse, num_bytes);
-      printf("%s", reponse);
+    num_bytes = socket_read_response(server_fd, response);
+    printf("RESPONSE: %s", response);
+    print_request(response, MAXLINE);
+
+    if (num_bytes >= 0) {
+      printf("%s", response);
+      write(conn_fd, response, num_bytes);
+    } else {
+      fprintf(stderr, "SOMETHING FAILED MAN IDEK AT THIS POINT\n");
+      continue;
     }
 
-    rio_writen(conn_fd, "END", 3);
     // send to server and await response
     free(to_server);
     free(p);
@@ -125,16 +132,33 @@ int format_request(char *hostname, char *pathname, char **request) {
   return ok;
 }
 
-void print_request(char *request, size_t MAX) {
-  printf("[");
-  for (int i = 0; i < MAX && request[i] != '\0'; i++) {
-    if (request[i] == '\r') {
-      printf("\\r");
-    } else if (request[i] == '\n') {
-      printf("\\n");
-    } else {
-      printf("%c", request[i]);
-    }
+int handle_client(int conn_fd, struct transaction *t) {
+
+  int num_bytes = socket_read_request(conn_fd, t->request);
+  if (num_bytes <= 0) {
+    fprintf(stderr, "Failed to read request...aborting connection\n");
+    close(conn_fd);
+    return -1;
   }
-  printf("]\n");
+
+  // validate request and put uri in uri variable
+  if (validate_request(t->request, t->uri, num_bytes) == 0) {
+    fprintf(stderr, "Invalid request...aborting connection\n");
+    close(conn_fd);
+    return -1;
+  }
+
+  // parse uri
+  if (parse_uri(t->uri, t->hostname, t->pathname, t->port) < 0) {
+    fprintf(stderr, "Failed to parse uri...aborting connection\n");
+    close(conn_fd);
+    return -1;
+  };
+  return 0;
+}
+
+void handle_SIGPIPE(int signum) {
+  printf("GOT SIGPIPE SHUTTING THIS HO DOWN\n");
+
+  exit(1);
 }
