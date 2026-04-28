@@ -5,7 +5,4 @@ CFLAGS = -Wall -Wextra -pedantic -o
 .PHONY: all
 
 proxy: all
-	$(CC) $(CFLAGS) proxy sequential_proxy.c network_helpers.c
-
-test:
-	$(CC) -g -fsanitize=address $(CFLAGS) proxy_tests test.c http_parsing.c
+	$(CC)  -g -fsanitize=address $(CFLAGS) proxy sequential_proxy.c ./helpers/network.c ./helpers/http_parsing.c ./helpers/csapp.c
