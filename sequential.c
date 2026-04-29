@@ -181,9 +181,6 @@ void handle_transaction(int conn_fd, struct sockaddr client_addy) {
 void write_log_entry(char *logstring, size_t len) {
   int fd = open("log.txt", O_CREAT | O_APPEND | O_WRONLY,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-  if (fd == -1) {
-    perror("open");
-  }
   int num = write(fd, logstring, len);
   close(fd);
 }
