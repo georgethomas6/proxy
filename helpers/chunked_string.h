@@ -1,4 +1,5 @@
-
+#ifndef CHUNKED_STRING_H
+#define CHUNKED_STRING_H
 #include <stdlib.h>
 
 #define MAX 8192
@@ -19,3 +20,5 @@ void nuke(struct chunked_string **);
 struct Node *initNode(void);
 int add(struct chunked_string *, char *, size_t);
 char *read_chunk_str(struct chunked_string *);
+
+#endif

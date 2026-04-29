@@ -1,3 +1,6 @@
+#ifndef NETWORK_H
+#define NETWORK_H
+#include "chunked_string.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -14,14 +17,22 @@
 #define MAXLINE 8096
 
 struct transaction {
-  char request[MAXLINE], response[MAXLINE], uri[MAXLINE], hostname[MAXLINE],
-      pathname[MAXLINE], *to_server;
+  struct chunked_string *request;
+  struct chunked_string *response;
+  struct chunked_string *uri;
+  struct chunked_string *hostname;
+  struct chunked_string *pathname;
+  char *to_server;
   int port;
   int to_server_len;
 };
+
 int gts_open_listenfd(char *);
 int gts_open_clientfd(char *, char *);
-int socket_read_request(int, char *);
-int socket_read_response(int, char *);
+int socket_read_request(int, struct chunked_string *);
+int socket_read_response(int, struct chunked_string *);
 void print_request(char *, size_t);
 int socket_write(int, char *, size_t);
+struct transaction *init_transaction(void);
+void take_down_transaction(struct transaction **);
+#endif

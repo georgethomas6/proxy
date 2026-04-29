@@ -63,8 +63,10 @@ int send_client_request(int server_fd, struct transaction *t) {
   // format request to send to server
   int request_len;
   // may need to make t.to_server by reference
-  if ((request_len =
-           format_request(t->hostname, t->pathname, &(t->to_server))) == -1) {
+  char *hostname = read_chunk_str(t->hostname);
+  char *pathname = read_chunk_str(t->pathname);
+  if ((request_len = format_request(hostname, pathname, &(t->to_server))) ==
+      -1) {
     perror("Failed to format request...aborting connection\n");
     return -1;
   }
@@ -88,9 +90,11 @@ int handle_server_response(int server_fd, int conn_fd, struct transaction *t) {
   int num_bytes;
   num_bytes = socket_read_response(server_fd, t->response);
 
-  if (num_bytes >= 0)
-    num_bytes = write(conn_fd, t->response, num_bytes);
-  else {
+  char *response = read_chunk_str(t->response);
+  if (num_bytes >= 0) {
+    num_bytes = write(conn_fd, response, num_bytes);
+    free(response);
+  } else {
     perror("Failed to read server response\n");
     return -1;
   }
@@ -116,14 +120,15 @@ int format_request(char *hostname, char *pathname, char **request) {
  * Returns 0 on success
  */
 int connect_to_server(struct transaction *t, char *p, int *server_fd) {
-  if ((*server_fd = gts_open_clientfd(t->hostname, p)) < 0) {
+  char *hostname = read_chunk_str(t->hostname);
+  if ((*server_fd = gts_open_clientfd(hostname, p)) < 0) {
     if (*server_fd == -1) {
       fprintf(stderr, "Failed to connected to %s...aborting connection\n",
-              t->hostname);
+              hostname);
     } else {
       const char *err = gai_strerror(*server_fd * -1);
       fprintf(stderr, "Failed to connect to %s: %s...aborting connection\n",
-              t->hostname, err);
+              hostname, err);
     }
     return -1;
   }
@@ -145,8 +150,10 @@ int handle_client_request(int conn_fd, struct transaction *t) {
     return -1;
   }
 
+  char *request = read_chunk_str(t->request);
+
   // validate request and put uri in uri variable
-  if (validate_request(t->request, t->uri, num_bytes) == 0) {
+  if (validate_request(request, t->uri, num_bytes) == 0) {
     fprintf(stderr, "Invalid request...aborting connection\n");
     return -1;
   }
@@ -172,42 +179,48 @@ void handle_transaction(int conn_fd, struct sockaddr client_addy) {
     return;
   }
 
-  struct transaction t;
-  memset(&t, 0, sizeof(struct transaction));
+  struct transaction *t = init_transaction();
+  if (!t) {
+    return;
+  }
 
-  if (handle_client_request(conn_fd, &t) < 0) {
+  if (handle_client_request(conn_fd, t) < 0) {
     close(conn_fd);
+    take_down_transaction(&t);
     return;
   };
 
   char *p;
-  asprintf(&p, "%d", t.port);
+  asprintf(&p, "%d", t->port);
 
   int server_fd;
-  if (connect_to_server(&t, p, &server_fd) < 0) {
+  if (connect_to_server(t, p, &server_fd) < 0) {
     free(p);
+    take_down_transaction(&t);
     close(conn_fd);
     return;
   };
 
-  if (send_client_request(server_fd, &t) < 0) {
+  if (send_client_request(server_fd, t) < 0) {
     free(p);
-    free(t.to_server);
+    free(t->to_server);
     close(server_fd);
+    take_down_transaction(&t);
     close(conn_fd);
     return;
   }
 
-  int size = handle_server_response(server_fd, conn_fd, &t);
+  int size = handle_server_response(server_fd, conn_fd, t);
 
   char *logstring = NULL;
-  format_log_entry(&logstring, (struct sockaddr_in *)&client_addy, t.uri, size);
+  char *uri = read_chunk_str(t->uri);
+  format_log_entry(&logstring, (struct sockaddr_in *)&client_addy, uri, size);
   printf("LOG:\n %s", logstring);
   write_log_entry(logstring, strlen(logstring));
 
   free(logstring);
   free(p);
-  free(t.to_server);
+  take_down_transaction(&t);
   close(server_fd);
   close(conn_fd);
 }

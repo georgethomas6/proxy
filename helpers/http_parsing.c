@@ -8,7 +8,8 @@
  * standards
  * returns 1 if formatted OK, 0 if not
  */
-int validate_request(char *request, char *url, size_t num_bytes) {
+int validate_request(char *request, struct chunked_string *url,
+                     size_t num_bytes) {
   char *first_space = memmem(request, num_bytes, " ", 1);
   assert(num_bytes > first_space - request);
   char *last_space =
@@ -29,7 +30,7 @@ int validate_request(char *request, char *url, size_t num_bytes) {
                  memcmp(last_space + 1, "HTTP/1.0\r\n", 10) == 0);
 
   if (method && non_empty_url && version) {
-    memcpy(url, first_space + 1, last_space - first_space - 1);
+    add(url, first_space + 1, last_space - first_space - 1);
   } else {
     url = NULL;
   }
@@ -43,14 +44,18 @@ int validate_request(char *request, char *url, size_t num_bytes) {
  * pathname must already be allocated and should be at least MAXLINE
  * bytes. Return -1 if there are any problems.
  */
-int parse_uri(char *uri, char *hostname, char *pathname, int *port) {
+int parse_uri(struct chunked_string *uri_chunk_str,
+              struct chunked_string *hostname_chunk_str,
+              struct chunked_string *pathname_chunk_str, int *port) {
   char *hostbegin;
   char *hostend;
   char *pathbegin;
   int len;
 
-  if (strncasecmp(uri, "http://", 7) != 0) {
-    hostname[0] = '\0';
+  char *uri = read_chunk_str(uri_chunk_str);
+
+  if (uri == NULL || strncasecmp(uri, "http://", 7) != 0) {
+    add(hostname_chunk_str, "\0", 1);
     return -1;
   }
 
@@ -58,8 +63,7 @@ int parse_uri(char *uri, char *hostname, char *pathname, int *port) {
   hostbegin = uri + 7;
   hostend = strpbrk(hostbegin, " :/\r\n\0");
   len = hostend - hostbegin;
-  strncpy(hostname, hostbegin, len);
-  hostname[len] = '\0';
+  add(hostname_chunk_str, hostbegin, len);
 
   /* Extract the port number */
   *port = 80; /* default */
@@ -69,9 +73,9 @@ int parse_uri(char *uri, char *hostname, char *pathname, int *port) {
   /* Extract the path */
   pathbegin = strchr(hostbegin, '/');
   if (pathbegin == NULL) {
-    pathname[0] = '\0';
+    add(pathname_chunk_str, "\0", 1);
   } else {
-    strcpy(pathname, pathbegin);
+    add(pathname_chunk_str, pathbegin, strlen(pathbegin));
   }
 
   return 0;

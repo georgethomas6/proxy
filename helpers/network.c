@@ -108,9 +108,9 @@ int gts_open_clientfd(char *host, char *port) {
   return socket_fd;
 }
 
-void print_request(char *request, size_t MAX) {
+void print_request(char *request, size_t MAXIMUM) {
   printf("[");
-  for (int i = 0; i < MAX && request[i] != '\0'; i++) {
+  for (int i = 0; i < MAXIMUM && request[i] != '\0'; i++) {
     if (request[i] == '\r') {
       printf("\\r");
     } else if (request[i] == '\n') {
@@ -128,17 +128,17 @@ void print_request(char *request, size_t MAX) {
  * The memory for buffer must be allocated by the caller
  * returns the number of bytes read, or -1 if error
  * */
-int socket_read_request(int fd, char *buffer) {
+int socket_read_request(int fd, struct chunked_string *chunk_str) {
 
   size_t num_read = 0, tot_read = 0;
 
-  char *pos = buffer;
   char last_four[4] = {0};
 
+  char character[1] = {'\0'};
   while (memcmp(last_four, "\n\r\n\r", 4) != 0 &&
          tot_read <
              MAXLINE) { // in reverse because that is the order it is read
-    if ((num_read = read(fd, pos, 1)) < 0) {
+    if ((num_read = read(fd, character, 1)) < 0) {
       if (errno == EINTR) { // interrupted by sig handler return
         continue;
       } else {
@@ -150,13 +150,13 @@ int socket_read_request(int fd, char *buffer) {
         0) { // connection was clsoed before we finishe reading the request
       return tot_read;
     }
-    pos += num_read;
+    add(chunk_str, character, 1);
     tot_read += num_read;
     if (num_read > 0) {
       for (int i = 3; i > 0; i--) {
         last_four[i] = last_four[i - 1];
       }
-      last_four[0] = *(pos - 1);
+      last_four[0] = character[0];
     }
   }
   return tot_read;
@@ -181,14 +181,13 @@ int socket_write(int fd, char *buffer, size_t len) {
  * The memory for buffer must be allocated by the caller
  * returns the number of bytes read, or -1 if error
  * */
-int socket_read_response(int fd, char *buffer) {
+int socket_read_response(int fd, struct chunked_string *chunk_str) {
 
   size_t num_read = 0, tot_read = 0;
 
-  char *pos = buffer;
-
-  while (tot_read < MAXLINE) {
-    if ((num_read = read(fd, pos, 1)) < 0) {
+  char character[1] = {'\0'};
+  while ((num_read = read(fd, character, 1)) != 0) {
+    if (num_read < 0) {
       if (errno == EINTR) { // interrupted by sig handler return
         continue;
       } else {
@@ -196,12 +195,55 @@ int socket_read_response(int fd, char *buffer) {
         return -1;
       }
     }
-    if (num_read ==
-        0) { // connection was clsoed before we finishe reading the request
-      return tot_read;
-    }
-    pos += num_read;
+    add(chunk_str, character, 1);
     tot_read += num_read;
   }
   return tot_read;
+}
+
+struct transaction *init_transaction(void) {
+  struct transaction *t = malloc(sizeof(struct transaction));
+  if (!t) {
+    return NULL;
+  }
+  t->hostname = init_chunked_string();
+  if (!t->hostname) {
+    return NULL;
+  }
+  t->pathname = init_chunked_string();
+  if (!t->pathname) {
+    nuke(&t->hostname);
+    return NULL;
+  }
+  t->request = init_chunked_string();
+  if (!t->request) {
+    nuke(&t->hostname);
+    nuke(&t->pathname);
+    return NULL;
+  }
+  t->response = init_chunked_string();
+  if (!t->response) {
+    nuke(&t->hostname);
+    nuke(&t->request);
+    nuke(&t->pathname);
+    return NULL;
+  }
+  t->uri = init_chunked_string();
+  if (!t->uri) {
+    nuke(&t->hostname);
+    nuke(&t->request);
+    nuke(&t->pathname);
+    nuke(&t->response);
+    return NULL;
+  }
+
+  return t;
+}
+
+void take_down_transaction(struct transaction **t) {
+  nuke(&(*t)->uri);
+  nuke(&(*t)->hostname);
+  nuke(&(*t)->response);
+  nuke(&(*t)->request);
+  nuke(&(*t)->pathname);
 }

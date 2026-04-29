@@ -73,3 +73,13 @@ IP ADDRESS: 0.0.0.0
 URI REQUESTED: http://httpforever.com/
 Size of Server's Response: 5943
 
+Time: Wed 29 Apr 2026 14:10:59 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://www.example.com/
+Size of Server's Response: 797
+
+Time: Wed 29 Apr 2026 14:11:14 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://httpforever.com/
+Size of Server's Response: 5943
+
