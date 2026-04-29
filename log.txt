@@ -8,3 +8,68 @@ IP ADDRESS: 0.0.0.0
 URI REQUESTED: http://warren.sewanee.edu/scarl/CS428/ProxyLab/proxylab.pdf
 Size of Server's Response: 603
 
+Time: Tue 28 Apr 2026 23:11:20 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://warren.sewanee.edu/scarl/CS428/ProxyLab/proxylab.pdf
+Size of Server's Response: 603
+
+Time: Tue 28 Apr 2026 23:12:06 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://www.example.com/
+Size of Server's Response: 798
+
+Time: Tue 28 Apr 2026 23:14:09 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://www.example.com/
+Size of Server's Response: 798
+
+Time: Tue 28 Apr 2026 23:14:09 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://www.example.com/favicon.ico
+Size of Server's Response: 719
+
+Time: Tue 28 Apr 2026 23:19:46 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://www.cs.hmc.edu/~geoff/classes/hmc.cs105.201501/labs/lab06-proxy/proxylab.pdf
+Size of Server's Response: 871
+
+Time: Tue 28 Apr 2026 23:20:25 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://www.cs.hmc.edu/~geoff/classes/hmc.cs105.201501/labs/lab06-proxy/proxylab.pdf
+Size of Server's Response: 871
+
+Time: Tue 28 Apr 2026 23:22:41 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://neverssl.com/
+Size of Server's Response: 413
+
+Time: Tue 28 Apr 2026 23:22:43 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://neverssl.com/favicon.ico
+Size of Server's Response: 413
+
+Time: Tue 28 Apr 2026 23:23:45 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://httpforever.com/
+Size of Server's Response: 5943
+
+Time: Tue 28 Apr 2026 23:23:46 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://httpforever.com/js/init.min.js
+Size of Server's Response: 1841
+
+Time: Tue 28 Apr 2026 23:23:46 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://httpforever.com/favicon.ico
+Size of Server's Response: 5108
+
+Time: Wed 29 Apr 2026 10:46:13 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://httpforever.com/
+Size of Server's Response: 5943
+
+Time: Wed 29 Apr 2026 10:46:25 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://httpforever.com/
+Size of Server's Response: 5943
+

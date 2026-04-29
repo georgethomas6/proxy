@@ -16,5 +16,6 @@ struct chunked_string {
 
 struct chunked_string *init_chunked_string(void);
 void nuke(struct chunked_string **);
+struct Node *initNode(void);
 int add(struct chunked_string *, char *, size_t);
-char *read(struct chunked_string *);
+char *read_chunk_str(struct chunked_string *);
