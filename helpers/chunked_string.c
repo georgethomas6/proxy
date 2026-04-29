@@ -71,7 +71,7 @@ int add(struct chunked_string *chunk_str, char *buffer, size_t size) {
     return -1;
   }
   struct Node *curr = NULL, *prev = NULL;
-  size_t length = chunk_str->length, copied = 0, to_copy = 0, idx = 0;
+  size_t copied = 0, to_copy = 0, idx = 0;
   for (curr = chunk_str->head; curr != NULL && curr->space == 0;
        curr = curr->next) {
     prev = curr;

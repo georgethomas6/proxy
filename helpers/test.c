@@ -1,22 +1,28 @@
 
 #include "chunked_string.h"
+#include "safe_queue.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-int test_init_add_and_nuke(void);
+int test_init_add_and_nuke_chunk_str(void);
+int test_init_add_and_nuke_safe_queue(void);
 int test_read(void);
+void *thread(void *);
 
 int main(int argc, char *argv[]) {
 
-  printf("Init, add, nuke, test: %s\n",
-         test_init_add_and_nuke() >= 0 ? "PASSED" : "FAILED");
+  printf("Init, add, nuke, test for chunk_str: %s\n",
+         test_init_add_and_nuke_chunk_str() >= 0 ? "PASSED" : "FAILED");
+
+  printf("Init, add, nuke, test for safe_queue: %s\n",
+         test_init_add_and_nuke_safe_queue() >= 0 ? "PASSED" : "FAILED");
   printf("Read test: %s\n", test_read() >= 0 ? "PASSED" : "FAILED");
   return EXIT_SUCCESS;
 }
 
-int test_init_add_and_nuke(void) {
+int test_init_add_and_nuke_chunk_str(void) {
   struct chunked_string *chunk_str = init_chunked_string();
   assert(read_chunk_str(chunk_str) == NULL);
   add(chunk_str, "TEST", strlen("TEST"));
@@ -80,4 +86,52 @@ int test_read(void) {
   assert(chunk_str->head->next != NULL);
   assert(chunk_str->head->next->space == 8191);
   return 0;
+}
+
+struct args {
+  struct safe_queue *q;
+  int i;
+};
+
+int test_init_add_and_nuke_safe_queue(void) {
+
+  struct safe_queue *q = init_safe_queue("JOHN\0");
+  pthread_t tids[100];
+
+  for (int i = 0; i < 100; i++) {
+    struct args *arg = malloc(sizeof(struct args));
+    arg->q = q;
+    arg->i = i;
+    pthread_create(&tids[i], NULL, thread, (void *)arg);
+  }
+  int sum = 0;
+  for (int i = 0; i < 100; i++) {
+    void *res;
+    pthread_join(tids[i], &res);
+    sum += *((int *)res);
+    free(res);
+  }
+  assert(sum == 4950);
+  push(q, 1);
+  push(q, 2);
+  push(q, 3);
+  int t;
+  pop(q, &t);
+  assert(t == 1);
+  pop(q, &t);
+  assert(t == 2);
+  pop(q, &t);
+  assert(t == 3);
+  nuke_safe_queue(&q);
+  assert(q == NULL);
+  return 0;
+}
+
+void *thread(void *arg) {
+  struct args *a = (struct args *)arg;
+
+  int *t = malloc(sizeof(int));
+  push(a->q, a->i);
+  pop(a->q, t);
+  return (void *)t;
 }
