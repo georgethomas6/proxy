@@ -25,7 +25,9 @@ int validate_request(char *request, char *url, size_t num_bytes) {
       last_space - first_space + 1 != 0 &&
       !memmem(first_space + 1, last_space - first_space - 1, " ", 1);
   int version = num_bytes - (last_space - request + 1) >= 10 &&
-                memcmp(last_space + 1, "HTTP/1.1\r\n", 10) == 0;
+                (memcmp(last_space + 1, "HTTP/1.1\r\n", 10) == 0 ||
+                 memcmp(last_space + 1, "HTTP/1.0\r\n", 10) == 0);
+
   if (method && non_empty_url && version) {
     memcpy(url, first_space + 1, last_space - first_space - 1);
   } else {
