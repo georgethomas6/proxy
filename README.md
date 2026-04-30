@@ -30,6 +30,7 @@ This is a tremendous case of if only I had known what I know now when I started.
    It becomes apparent when you run `make multi-sanitized` and make a request.
 2. I do not log blocked requests.
    I got lazy and filtering was the last thing I did.
+3. I finished this five minutes before the due date, so I did not have time to test it on the linux machines. It works on my machine though :)
 
 ## Conclusion
 
