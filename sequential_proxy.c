@@ -14,16 +14,13 @@ int main(int argc, char *argv[]) {
     perror("gts_open_listenfd failed");
     exit(EXIT_FAILURE);
   }
-  struct sockaddr client_addr;
+  struct sockaddr_storage client_addr;
+  socklen_t client_len = sizeof(client_addr);
 
   while (1) {
     unsigned int client_len = sizeof(client_addr);
-    conn_fd = accept(listen_fd, &client_addr, &client_len);
-    // safe_queue to store conn_fds
-    // pool of workers
-    // waiting on safe_queue to not be empty
-    // pull from safe_queue -> due the response
-    handle_transaction(conn_fd, client_addr);
+    conn_fd = accept(listen_fd, (struct sockaddr *)&client_addr, &client_len);
+    handle_transaction(conn_fd, *(struct sockaddr *)&client_addr);
   }
 
   close(listen_fd);

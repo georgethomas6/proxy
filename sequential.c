@@ -1,5 +1,9 @@
 
 #include "sequential.h"
+#include "helpers/chunked_string.h"
+#include "helpers/network.h"
+#include <stdlib.h>
+#include <string.h>
 /*
  * TODO:
  *
@@ -119,12 +123,93 @@ int handle_client_request(int conn_fd, struct transaction *t) {
   return 1;
 }
 
-void handle_SIGPIPE(int signum) {
-  printf("GOT SIGPIPE SHUTTING THIS HO DOWN\n");
+/*
+ * Function is the same as handle_transaction, except it returns the logstring
+ * instead of logging it immediately. This way we can wrap the call to
+ * write_log_entry in a mutex to ensure safety. Return value is NULL upon error.
+ * Caller must free the return value.
+ */
+char *handle_transaction_thread(int conn_fd, struct sockaddr client_addy) {
 
-  exit(1);
+  if (conn_fd == -1) {
+    perror("Failed to accept connection");
+    return NULL;
+  }
+
+  struct transaction *t = init_transaction();
+  if (!t) {
+    return NULL;
+  }
+
+  if (handle_client_request(conn_fd, t) < 0) {
+    close(conn_fd);
+    take_down_transaction(&t);
+    return NULL;
+  };
+
+  char *hostname = read_chunk_str(t->hostname);
+  if (is_blocked(hostname) == 0) {
+
+    char body[] = "<!DOCTYPE html>"
+                  "<html><head><title>Blocked</title></head>"
+                  "<body><h1 style='font-size:60px;'>BLOCKED</h1></body>"
+                  "</html>";
+
+    char header[256];
+    snprintf(header, sizeof(header),
+             "HTTP/1.0 403 Forbidden\r\n"
+             "Content-Type: text/html\r\n"
+             "Content-Length: %zu\r\n"
+             "\r\n",
+             strlen(body));
+
+    socket_write(conn_fd, header, strlen(header));
+    socket_write(conn_fd, body, strlen(body));
+
+    free(hostname);
+    close(conn_fd);
+    take_down_transaction(&t);
+    return NULL;
+  }
+  free(hostname);
+  char *p;
+  asprintf(&p, "%d", t->port);
+
+  int server_fd;
+  if (connect_to_server(t, p, &server_fd) < 0) {
+    free(p);
+    take_down_transaction(&t);
+    close(conn_fd);
+    return NULL;
+  };
+
+  if (send_client_request(server_fd, t) < 0) {
+    free(p);
+    free(t->to_server);
+    close(server_fd);
+    take_down_transaction(&t);
+    close(conn_fd);
+    return NULL;
+  }
+
+  int size = handle_server_response(server_fd, conn_fd, t);
+
+  char *logstring = NULL;
+  char *uri = read_chunk_str(t->uri);
+  format_log_entry(&logstring, (struct sockaddr_in *)&client_addy, uri, size);
+  printf("LOG:\n %s", logstring);
+
+  free(p);
+  free(t->to_server);
+  take_down_transaction(&t);
+  close(server_fd);
+  close(conn_fd);
+  return logstring;
 }
 
+/*
+ * Function handles the transaction between the client <-> proxy <-> server
+ */
 void handle_transaction(int conn_fd, struct sockaddr client_addy) {
 
   if (conn_fd == -1) {
@@ -143,6 +228,31 @@ void handle_transaction(int conn_fd, struct sockaddr client_addy) {
     return;
   };
 
+  char *hostname = read_chunk_str(t->hostname);
+  if (is_blocked(hostname) == 0) {
+
+    char body[] = "<!DOCTYPE html>"
+                  "<html><head><title>Blocked</title></head>"
+                  "<body><h1 style='font-size:60px;'>BLOCKED</h1></body>"
+                  "</html>";
+
+    char header[256];
+    snprintf(header, sizeof(header),
+             "HTTP/1.0 403 Forbidden\r\n"
+             "Content-Type: text/html\r\n"
+             "Content-Length: %zu\r\n"
+             "\r\n",
+             strlen(body));
+
+    socket_write(conn_fd, header, strlen(header));
+    socket_write(conn_fd, body, strlen(body));
+
+    free(hostname);
+    close(conn_fd);
+    take_down_transaction(&t);
+    return;
+  }
+  free(hostname);
   char *p;
   asprintf(&p, "%d", t->port);
 
@@ -169,6 +279,7 @@ void handle_transaction(int conn_fd, struct sockaddr client_addy) {
   char *uri = read_chunk_str(t->uri);
   format_log_entry(&logstring, (struct sockaddr_in *)&client_addy, uri, size);
   printf("LOG:\n %s", logstring);
+
   write_log_entry(logstring, strlen(logstring));
 
   free(logstring);
@@ -183,6 +294,35 @@ void write_log_entry(char *logstring, size_t len) {
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   write(fd, logstring, len);
   close(fd);
+}
+
+int is_blocked(char *hostname) {
+  int fd = open("blocked.txt", O_RDONLY);
+  if (fd < 0) {
+    return 0;
+  }
+
+  char buf[MAXLINE];
+  memset(buf, 0, MAXLINE);
+
+  int n = read(fd, buf, MAXLINE - 1);
+  close(fd);
+
+  if (n <= 0) {
+    return 0;
+  }
+
+  char *saveptr;
+  char *line = strtok_r(buf, "\n", &saveptr);
+
+  while (line != NULL) {
+    if (strcmp(hostname, line) == 0) {
+      return 0;
+    }
+    line = strtok_r(NULL, "\n", &saveptr);
+  }
+
+  return 1;
 }
 
 /*

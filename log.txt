@@ -13,3 +13,58 @@ IP ADDRESS: 0.0.0.0
 URI REQUESTED: http://httpforever.com/
 Size of Server's Response: 5943
 
+Time: Wed 29 Apr 2026 21:46:46 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://httpforever.com/
+Size of Server's Response: 5943
+
+Time: Wed 29 Apr 2026 21:46:55 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://www.example.com/
+Size of Server's Response: 797
+
+Time: Wed 29 Apr 2026 23:07:46 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://httpforever.com/
+Size of Server's Response: 5943
+
+Time: Wed 29 Apr 2026 23:07:50 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://httpforever.com/
+Size of Server's Response: 5943
+
+Time: Wed 29 Apr 2026 23:29:23 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://www.example.com/
+Size of Server's Response: 798
+
+Time: Wed 29 Apr 2026 23:44:55 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://plague.com/
+Size of Server's Response: 190
+
+Time: Wed 29 Apr 2026 23:45:20 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://pirate.com/
+Size of Server's Response: 586
+
+Time: Wed 29 Apr 2026 23:45:45 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://fakewebsite.org/
+Size of Server's Response: 216
+
+Time: Wed 29 Apr 2026 23:47:38 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://nono.com/
+Size of Server's Response: 479
+
+Time: Wed 29 Apr 2026 23:49:28 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://fakewebsite.com/
+Size of Server's Response: 216
+
+Time: Wed 29 Apr 2026 23:49:40 CDT
+IP ADDRESS: 0.0.0.0
+URI REQUESTED: http://httpforever.com/
+Size of Server's Response: 5943
+
