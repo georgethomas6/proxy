@@ -197,7 +197,6 @@ char *handle_transaction_thread(int conn_fd, struct sockaddr client_addy) {
   char *logstring = NULL;
   char *uri = read_chunk_str(t->uri);
   format_log_entry(&logstring, (struct sockaddr_in *)&client_addy, uri, size);
-  printf("LOG:\n %s", logstring);
 
   free(p);
   free(t->to_server);
@@ -278,7 +277,6 @@ void handle_transaction(int conn_fd, struct sockaddr client_addy) {
   char *logstring = NULL;
   char *uri = read_chunk_str(t->uri);
   format_log_entry(&logstring, (struct sockaddr_in *)&client_addy, uri, size);
-  printf("LOG:\n %s", logstring);
 
   write_log_entry(logstring, strlen(logstring));
 
