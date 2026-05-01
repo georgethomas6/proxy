@@ -4,11 +4,6 @@
 #include "helpers/network.h"
 #include <stdlib.h>
 #include <string.h>
-/*
- * TODO:
- *
- * THREAD THIS HO
- * */
 
 /*
  * Writes the client's request to server_fd, on error it prints a message to
